@@ -1,12 +1,14 @@
 """
-文章采集与入库 API：单条/批量写入，与来源关联。
+文章采集与入库 API：单条/批量写入，与来源关联；关键词提取与按标签筛选。
 """
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models import Article, Source
+from app.models import Article, Source, Tag
 from app.schemas.article import ArticleBatchCreate, ArticleCreate, ArticleResponse
+from app.schemas.tag import TagResponse
+from app.services.keyword_extract import extract_keywords
 
 router = APIRouter(prefix="/articles", tags=["articles"])
 
@@ -20,10 +22,26 @@ def _ensure_source_exists(source_id: int | None, db: Session) -> None:
         raise HTTPException(status_code=404, detail=f"Source id={source_id} not found")
 
 
+def _get_or_create_tag(db: Session, name: str) -> Tag:
+    """按名称获取或创建标签。"""
+    tag = db.query(Tag).filter(Tag.name == name).first()
+    if not tag:
+        tag = Tag(name=name)
+        db.add(tag)
+        db.flush()
+    return tag
+
+
 @router.get("", response_model=list[ArticleResponse])
-def list_articles(db: Session = Depends(get_db)):
-    """文章列表（用于验收与后续 F006 扩展筛选）。"""
-    return db.query(Article).order_by(Article.id).all()
+def list_articles(
+    tag_id: int | None = Query(None, description="按关键词/标签 ID 筛选"),
+    db: Session = Depends(get_db),
+):
+    """文章列表；支持按标签 ID 筛选（按关键词聚合查询）。"""
+    q = db.query(Article).order_by(Article.id)
+    if tag_id is not None:
+        q = q.join(Article.tags).filter(Tag.id == tag_id)
+    return q.all()
 
 
 @router.post("", response_model=ArticleResponse, status_code=201)
@@ -64,3 +82,22 @@ def create_articles_batch(payload: ArticleBatchCreate, db: Session = Depends(get
     for a in created:
         db.refresh(a)
     return created
+
+
+@router.post("/{article_id}/extract-keywords", response_model=list[TagResponse])
+def extract_article_keywords(article_id: int, db: Session = Depends(get_db)):
+    """对指定文章进行关键词提取，关联到文章并返回标签列表。"""
+    article = db.query(Article).filter(Article.id == article_id).first()
+    if not article:
+        raise HTTPException(status_code=404, detail=f"Article id={article_id} not found")
+    text = (article.title or "") + "\n" + (article.summary or "")
+    keywords = extract_keywords(text)
+    tags: list[Tag] = []
+    for name in keywords:
+        tag = _get_or_create_tag(db, name)
+        tags.append(tag)
+    article.tags = tags
+    db.commit()
+    for t in tags:
+        db.refresh(t)
+    return tags

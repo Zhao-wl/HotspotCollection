@@ -1,5 +1,10 @@
 # 项目进度日志
 
+## Session 5 - 2026-02-13
+- **完成**: F005 关键词提取与聚合
+- **实现**: 集成 `langextract`，通过 `app/config.py` 读取硅基流动 API（SILICONFLOW_API_KEY/BASE_URL/MODEL）；`app/services/keyword_extract.py` 使用 LangExtract + 硅基流动（OpenAI 兼容 base_url）提取关键词；`POST /articles/{id}/extract-keywords` 对文章提取并关联 Tag；`GET /tags` 列表、`GET /articles?tag_id=` 按关键词聚合查询；验收脚本 `tests/test_keywords_api.py` 通过（mock 提取结果，无 API Key 时返回空列表）。
+- **下一步**: 实现 F006 文章展示 API（按日期、标签、来源筛选，分页）
+
 ## Session 4 - 2026-02-13
 - **完成**: F004 文章采集与入库
 - **实现**: `app/schemas/article.py`（ArticleCreate/ArticleResponse/ArticleBatchCreate）、`app/routers/articles.py`（GET /articles 列表、POST /articles 单条、POST /articles/batch 批量）、按 source_id 校验来源存在；验收脚本 `tests/test_articles_api.py` 全部通过。
