@@ -38,7 +38,7 @@
         "来源至少包含名称、类型或 URL/配置等可区分不同来源的字段",
         "配置持久化到 SQLite"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "F004",

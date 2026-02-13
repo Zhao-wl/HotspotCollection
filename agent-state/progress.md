@@ -1,5 +1,10 @@
 # 项目进度日志
 
+## Session 3 - 2026-02-13
+- **完成**: F003 来源配置 API（CRUD）
+- **实现**: `app/schemas/source.py`（SourceCreate/Update/Response）、`app/routers/sources.py`（POST/GET/PATCH/DELETE /sources）、在 main 中挂载路由；验收脚本 `tests/test_sources_api.py`（临时文件 DB + TestClient）全部通过。
+- **下一步**: 实现 F004 文章采集与入库
+
 ## Session 2 - 2026-02-13
 - **完成**: F001 项目基础设施验收；F002 后端数据模型
 - **F001**: 用 TestClient 验证后端 GET /health；`npm run build` 验证前端；在 `docs/PROJECT_README.md` 中补充「同时启动前后端」说明。四条验收标准均满足。

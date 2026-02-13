@@ -10,6 +10,7 @@ __pycache__/
 
 # 数据库（可选：若希望提交空库可去掉）
 backend/*.db
+backend/*.db-journal
 backend/data/
 
 # Node
