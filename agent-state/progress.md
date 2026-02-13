@@ -1,5 +1,10 @@
 # 项目进度日志
 
+## Session 12 - 2026-02-13
+- **完成**: F012 采集后使用 LangExtract 对获取到的文章进行关键词提取
+- **实现**: 在 `features.json` 中新增 F012；新增 `app/services/article_keywords.py`（`get_or_create_tag`、`extract_and_attach_keywords`）供文章 API 与采集服务复用；`app/services/collector.py` 中 `_dedupe_and_insert` 改为返回 `(新增数量, 新文章列表)`，单来源采集与全部采集在 commit 后对新文章依次调用 `extract_and_attach_keywords` 并再次 commit；提取失败时仅跳过该条，不影响入库。文章路由改为使用 `extract_and_attach_keywords`。验收：`tests/test_collect_keywords.py` 通过（mock RSS 与关键词提取，验证新文章自动有关键词及无 API Key 时仍正常入库）；`test_keywords_api` / `test_articles_api` 通过。
+- **下一步**: 可选继续扩展。
+
 ## Session 11 - 2026-02-13
 - **完成**: F011 文章列表显示 LangExtract 提取的关键词（每条 2-3 个）
 - **实现**: 在 `features.json` 中新增 F011；前端文章列表中原「标签」改为「关键词」，使用 `a.tags.slice(0, 3)` 仅展示每篇文章前 2-3 个关键词（来自后端 tags，即 LangExtract 提取结果），分隔符改为顿号「、」。验收：列表每条显示关键词、仅 2-3 个；`npm run build` 通过。

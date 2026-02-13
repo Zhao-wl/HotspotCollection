@@ -9,6 +9,7 @@ import httpx
 from sqlalchemy.orm import Session
 
 from app.models import Article, Source
+from app.services.article_keywords import extract_and_attach_keywords
 
 # 已知的 RSS 纠正：博客首页或失效 URL -> 实际可用的 feed URL（避免 403/404）
 _RSS_URL_CORRECTIONS: dict[str, str] = {
@@ -122,9 +123,10 @@ def fetch_api(api_url: str, timeout: float = 15.0) -> list[dict[str, Any]]:
     return items
 
 
-def _dedupe_and_insert(db: Session, source_id: int, items: list[dict[str, Any]]) -> int:
-    """按 (source_id, url) 去重，只插入新文章；返回本次新增数量。"""
+def _dedupe_and_insert(db: Session, source_id: int, items: list[dict[str, Any]]) -> tuple[int, list[Article]]:
+    """按 (source_id, url) 去重，只插入新文章；返回 (本次新增数量, 新文章列表)。"""
     added = 0
+    new_articles: list[Article] = []
     for item in items:
         exists = (
             db.query(Article)
@@ -141,8 +143,10 @@ def _dedupe_and_insert(db: Session, source_id: int, items: list[dict[str, Any]])
             summary=item.get("summary"),
         )
         db.add(article)
+        db.flush()  # 使新文章获得 id，便于后续关键词提取
         added += 1
-    return added
+        new_articles.append(article)
+    return added, new_articles
 
 
 def run_collection_for_source(db: Session, source_id: int) -> dict[str, Any]:
@@ -184,8 +188,15 @@ def run_collection_for_source(db: Session, source_id: int) -> dict[str, Any]:
             items = fetch_rss(feed_url)
         else:
             items = fetch_api(url)
-        n = _dedupe_and_insert(db, src.id, items)
+        n, new_articles = _dedupe_and_insert(db, src.id, items)
         db.commit()
+        for article in new_articles:
+            try:
+                extract_and_attach_keywords(db, article)
+            except Exception:
+                pass  # 提取失败不影响入库结果，仅无关键词
+        if new_articles:
+            db.commit()
         return {
             "ok": True,
             "source_id": src.id,
@@ -229,8 +240,15 @@ def run_collection(db: Session) -> dict[str, Any]:
                 items = fetch_rss(feed_url)
             else:
                 items = fetch_api(url)
-            n = _dedupe_and_insert(db, src.id, items)
+            n, new_articles = _dedupe_and_insert(db, src.id, items)
             db.commit()
+            for article in new_articles:
+                try:
+                    extract_and_attach_keywords(db, article)
+                except Exception:
+                    pass  # 提取失败不影响入库结果，仅无关键词
+            if new_articles:
+                db.commit()
             articles_added += n
             sources_ok += 1
         except Exception as e:

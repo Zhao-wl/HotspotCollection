@@ -44,8 +44,8 @@ def test_keyword_extract_and_aggregation():
         assert r.status_code == 201
         article_id = r.json()["id"]
 
-        # 2. Mock 关键词提取，不依赖硅基流动 API
-        with patch("app.routers.articles.extract_keywords", return_value=["人工智能", "机器学习"]):
+        # 2. Mock 关键词提取，不依赖硅基流动 API（patch 调用方使用的引用）
+        with patch("app.services.article_keywords.extract_keywords", return_value=["人工智能", "机器学习"]):
             r = client.post(f"/articles/{article_id}/extract-keywords")
         assert r.status_code == 200
         tags = r.json()

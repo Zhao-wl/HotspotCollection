@@ -133,6 +133,17 @@
         "每条文章仅显示 2-3 个关键词，不展示全部"
       ],
       "passes": true
+    },
+    {
+      "id": "F012",
+      "category": "backend",
+      "priority": 12,
+      "description": "采集后使用 LangExtract 对获取到的文章进行关键词提取",
+      "acceptance_criteria": [
+        "单来源采集（POST /collect/run/{source_id}）或全部采集入库的新文章，在入库后自动使用 LangExtract 进行关键词提取并关联到文章",
+        "若未配置 API Key 或提取失败，新文章仍正常入库，仅无关键词或关键词为空"
+      ],
+      "passes": true
     }
   ]
 }

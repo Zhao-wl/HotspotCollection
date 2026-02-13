@@ -18,7 +18,7 @@ from app.schemas.article import (
     TagInArticle,
 )
 from app.schemas.tag import TagResponse
-from app.services.keyword_extract import extract_keywords
+from app.services.article_keywords import extract_and_attach_keywords
 
 router = APIRouter(prefix="/articles", tags=["articles"])
 
@@ -30,16 +30,6 @@ def _ensure_source_exists(source_id: int | None, db: Session) -> None:
     source = db.query(Source).filter(Source.id == source_id).first()
     if not source:
         raise HTTPException(status_code=404, detail=f"Source id={source_id} not found")
-
-
-def _get_or_create_tag(db: Session, name: str) -> Tag:
-    """按名称获取或创建标签。"""
-    tag = db.query(Tag).filter(Tag.name == name).first()
-    if not tag:
-        tag = Tag(name=name)
-        db.add(tag)
-        db.flush()
-    return tag
 
 
 def _article_to_list_response(article: Article) -> ArticleListResponse:
@@ -137,14 +127,8 @@ def extract_article_keywords(article_id: int, db: Session = Depends(get_db)):
     article = db.query(Article).filter(Article.id == article_id).first()
     if not article:
         raise HTTPException(status_code=404, detail=f"Article id={article_id} not found")
-    text = (article.title or "") + "\n" + (article.summary or "")
-    keywords = extract_keywords(text)
-    tags: list[Tag] = []
-    for name in keywords:
-        tag = _get_or_create_tag(db, name)
-        tags.append(tag)
-    article.tags = tags
+    extract_and_attach_keywords(db, article)
     db.commit()
-    for t in tags:
+    for t in article.tags:
         db.refresh(t)
-    return tags
+    return article.tags
