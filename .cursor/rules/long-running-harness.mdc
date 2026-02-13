@@ -1,0 +1,82 @@
+---
+description: 长时间运行 Agent 框架核心规则 - 引导 Agent 跨多个会话增量完成复杂编码项目
+alwaysApply: true
+---
+
+# Long-Running Agent Harness
+
+你正在一个支持跨多个会话持续推进的长期项目中工作。每次新会话开始时，你没有之前会话的记忆，必须通过状态文件和 Git 历史恢复上下文。
+
+## 模式检测
+
+每次会话开始时，首先执行以下检测：
+
+1. 运行 `pwd` 确认工作目录
+2. 检查 `agent-state/features.json` 是否存在
+   - **不存在** → 进入「初始化模式」
+   - **存在** → 进入「编码模式」
+
+---
+
+## 初始化模式（Initializer Phase）
+
+当 `agent-state/features.json` 不存在时，说明这是项目的首次设置。按以下步骤执行：
+
+1. **分析用户需求**: 理解用户的高层描述，明确项目范围
+2. **生成特性列表**: 创建 `agent-state/features.json`，将需求拆分为细粒度的可验证特性，按优先级排序。每个特性必须包含 `id`, `category`, `priority`, `description`, `acceptance_criteria`, `passes` 字段
+3. **创建初始化脚本**: 创建 `agent-state/init.ps1`（Windows）和/或 `agent-state/init.sh`（Linux/Mac），用于环境搭建、依赖安装、开发服务器启动
+4. **搭建项目脚手架**: 创建基本的项目目录结构、配置文件、依赖清单
+5. **初始化进度文件**: 创建 `agent-state/progress.md`，记录 Session 1 的工作摘要
+6. **Git 提交**: 将所有初始文件提交到 Git，使用描述性提交信息
+
+---
+
+## 编码模式（Coder Phase）
+
+当 `agent-state/features.json` 已存在时，按以下步骤执行：
+
+### 步骤 1: 恢复上下文
+- 读取 `agent-state/progress.md` 了解最近的工作进展
+- 运行 `git log --oneline -20` 查看最近的提交历史
+- 读取 `agent-state/features.json` 了解整体进度
+
+### 步骤 2: 健康检查
+- 如果存在 `agent-state/init.ps1` 或 `agent-state/init.sh`，运行它确认环境正常
+- 快速验证已完成的核心功能是否仍然正常工作
+- 如果发现已有功能出现 bug，**先修复 bug 再开始新特性**
+
+### 步骤 3: 选择任务
+- 从 `agent-state/features.json` 中选择优先级最高（priority 数值最小）的 `"passes": false` 特性
+- 一次只选择一个特性来实现
+
+### 步骤 4: 增量实现
+- 专注实现选定的单个特性
+- 编写清晰、有文档的代码
+- 如果特性涉及多个子步骤，逐步完成
+
+### 步骤 5: 测试验证
+- 根据 `acceptance_criteria` 逐条验证功能
+- 使用实际的端到端测试（运行应用、发送请求、检查输出）
+- 只有全部验收标准通过后，才能标记特性为完成
+
+### 步骤 6: 更新状态
+- 将该特性的 `passes` 字段改为 `true`
+- 运行 `git add` 和 `git commit`，使用描述性提交信息
+- 在 `agent-state/progress.md` 顶部追加本次会话的工作摘要
+
+### 步骤 7: 继续或收尾
+- 如果上下文窗口还有足够空间，回到步骤 3 选择下一个特性
+- 如果即将用尽上下文，确保当前代码处于干净状态后结束
+
+---
+
+## 关键约束（必须严格遵守）
+
+1. **一次一个特性**: 不要试图同时实现多个特性，完成一个再做下一个
+2. **不可修改特性定义**: `features.json` 中的 `id`, `description`, `acceptance_criteria` 不可修改或删除，只能修改 `passes` 字段
+3. **先检查后开发**: 每次会话必须先读取进度文件和 git log，再开始工作
+4. **先修 bug 后开发**: 如果发现已有功能有 bug，必须先修复
+5. **验证后才标记完成**: 不能跳过测试就将特性标记为 `passes: true`
+6. **每个特性都要提交**: 完成一个特性后立即 git commit，不要积攒多个特性一起提交
+7. **保持干净状态**: 会话结束时，代码必须处于可运行、无明显 bug 的状态
+8. **不要过早宣布完成**: 只有当 features.json 中所有特性都 `passes: true` 时，项目才算完成

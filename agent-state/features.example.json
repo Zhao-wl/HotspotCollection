@@ -1,0 +1,43 @@
+{
+  "project": "示例项目名称",
+  "description": "这是一个示例项目，展示 features.json 的格式规范",
+  "created_at": "2026-02-13T10:00:00+08:00",
+  "features": [
+    {
+      "id": "F001",
+      "category": "infra",
+      "priority": 1,
+      "description": "项目基础设施搭建：初始化项目结构、配置构建工具、设置开发环境",
+      "acceptance_criteria": [
+        "项目目录结构已创建",
+        "依赖管理文件已配置（如 package.json / requirements.txt）",
+        "可以通过一条命令启动开发环境"
+      ],
+      "passes": false
+    },
+    {
+      "id": "F002",
+      "category": "core",
+      "priority": 2,
+      "description": "实现核心数据模型和基本 CRUD 操作",
+      "acceptance_criteria": [
+        "数据模型已定义并有类型/schema 约束",
+        "支持创建、读取、更新、删除操作",
+        "操作有基本的错误处理"
+      ],
+      "passes": false
+    },
+    {
+      "id": "F003",
+      "category": "ui",
+      "priority": 4,
+      "description": "创建基础用户界面，展示数据列表",
+      "acceptance_criteria": [
+        "页面可以正常加载",
+        "数据列表正确渲染",
+        "界面在主流浏览器中显示正常"
+      ],
+      "passes": false
+    }
+  ]
+}
