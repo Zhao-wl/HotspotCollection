@@ -28,6 +28,8 @@
 4. 打开浏览器: http://localhost:5173  
    健康检查: http://localhost:8000/health
 
+**同时启动前后端**：开两个终端，一个执行步骤 2（后端），一个执行步骤 3（前端）。
+
 ## API Key 配置
 
 在 `backend/.env` 中配置硅基流动 API（可复制 `backend/.env.example` 为 `.env` 后填写）。  

@@ -14,7 +14,7 @@
         "前端可通过命令启动并能在浏览器打开",
         "README 或 init 脚本说明如何同时启动前后端"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "F002",
