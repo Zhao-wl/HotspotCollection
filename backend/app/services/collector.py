@@ -145,6 +145,65 @@ def _dedupe_and_insert(db: Session, source_id: int, items: list[dict[str, Any]])
     return added
 
 
+def run_collection_for_source(db: Session, source_id: int) -> dict[str, Any]:
+    """
+    对指定来源执行一次采集，去重后入库。
+    仅当来源类型为 rss 或 api 且已配置 URL 时执行。
+    返回: { "ok": bool, "source_id": int, "source_name": str, "articles_added": int, "error": str | None }
+    """
+    src = db.query(Source).filter(Source.id == source_id).first()
+    if not src:
+        return {
+            "ok": False,
+            "source_id": source_id,
+            "source_name": "",
+            "articles_added": 0,
+            "error": "来源不存在",
+        }
+    kind = (src.type_or_kind or "").strip().lower()
+    if kind not in ("rss", "api"):
+        return {
+            "ok": False,
+            "source_id": src.id,
+            "source_name": src.name,
+            "articles_added": 0,
+            "error": f"该来源类型为 {src.type_or_kind or '未设置'}，仅支持 rss 或 api 类型进行采集",
+        }
+    url = (src.url_or_config or "").strip()
+    if not url:
+        return {
+            "ok": False,
+            "source_id": src.id,
+            "source_name": src.name,
+            "articles_added": 0,
+            "error": "该来源未配置 URL，无法采集",
+        }
+    try:
+        if kind == "rss":
+            feed_url = _RSS_URL_CORRECTIONS.get(url.rstrip("/"), url)
+            items = fetch_rss(feed_url)
+        else:
+            items = fetch_api(url)
+        n = _dedupe_and_insert(db, src.id, items)
+        db.commit()
+        return {
+            "ok": True,
+            "source_id": src.id,
+            "source_name": src.name,
+            "articles_added": n,
+            "error": None,
+        }
+    except Exception as e:
+        db.rollback()
+        return {
+            "ok": False,
+            "source_id": src.id,
+            "source_name": src.name,
+            "articles_added": 0,
+            "error": str(e),
+        }
+
+
 def run_collection(db: Session) -> dict[str, Any]:
     """
     对全部配置了 URL 的 rss/api 来源执行一次采集，去重后入库。

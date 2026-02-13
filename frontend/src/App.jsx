@@ -90,6 +90,8 @@ export default function App() {
   const [sourceSubmitError, setSourceSubmitError] = useState(null)
   const [collectRunning, setCollectRunning] = useState(false)
   const [collectResult, setCollectResult] = useState(null)
+  const [collectingSourceId, setCollectingSourceId] = useState(null)
+  const [sourceCollectResult, setSourceCollectResult] = useState({})
   const { list, loading, error, refetch: refetchArticles } = useArticles({
     ...filters,
     source_id: filters.source_id || undefined,
@@ -192,6 +194,27 @@ export default function App() {
       setCollectResult({ errors: [e.message || '请求失败'] })
     } finally {
       setCollectRunning(false)
+    }
+  }
+
+  const canCollectSource = (s) => {
+    const kind = (s.type_or_kind || '').toLowerCase()
+    const hasUrl = (s.url_or_config || '').trim().length > 0
+    return (kind === 'rss' || kind === 'api') && hasUrl
+  }
+
+  const runCollectSource = async (sourceId) => {
+    setCollectingSourceId(sourceId)
+    setSourceCollectResult((prev) => ({ ...prev, [sourceId]: null }))
+    try {
+      const r = await fetch(`${API_BASE}/collect/run/${sourceId}`, { method: 'POST' })
+      const data = await r.json().catch(() => ({}))
+      setSourceCollectResult((prev) => ({ ...prev, [sourceId]: data }))
+      refetchArticles()
+    } catch (e) {
+      setSourceCollectResult((prev) => ({ ...prev, [sourceId]: { ok: false, error: e.message || '请求失败' } }))
+    } finally {
+      setCollectingSourceId(null)
     }
   }
 
@@ -362,12 +385,29 @@ export default function App() {
               <span style={{ color: 'var(--muted)', fontSize: '0.85rem', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={s.url_or_config || ''}>
                 {s.url_or_config || '—'}
               </span>
+              {canCollectSource(s) && (
+                <button
+                  type="button"
+                  onClick={() => runCollectSource(s.id)}
+                  disabled={collectingSourceId === s.id}
+                  style={{ padding: '0.25rem 0.5rem', fontSize: '0.85rem' }}
+                >
+                  {collectingSourceId === s.id ? '采集中…' : '采集'}
+                </button>
+              )}
               <button type="button" onClick={() => openEditSource(s)} style={{ padding: '0.25rem 0.5rem', fontSize: '0.85rem' }}>
                 编辑
               </button>
               <button type="button" onClick={() => deleteSource(s.id)} style={{ padding: '0.25rem 0.5rem', fontSize: '0.85rem' }}>
                 删除
               </button>
+              {sourceCollectResult[s.id] != null && (
+                <span style={{ fontSize: '0.85rem', color: sourceCollectResult[s.id].ok ? 'var(--muted)' : 'crimson' }}>
+                  {sourceCollectResult[s.id].ok
+                    ? `已采集，新增 ${sourceCollectResult[s.id].articles_added ?? 0} 篇`
+                    : `失败: ${sourceCollectResult[s.id].error || '未知错误'}`}
+                </span>
+              )}
             </li>
           ))}
         </ul>

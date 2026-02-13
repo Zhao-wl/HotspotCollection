@@ -1,5 +1,10 @@
 # 项目进度日志
 
+## Session 10 - 2026-02-13
+- **完成**: F010 支持每个数据来源进行采集
+- **实现**: 后端 `app/services/collector.py` 新增 `run_collection_for_source(db, source_id)`，仅对指定 rss/api 且已配置 URL 的来源执行采集并入库，否则返回明确错误；`app/routers/collect.py` 新增 `POST /collect/run/{source_id}`，来源不存在时返回 404。前端在来源配置列表中，对可采集来源（rss 或 api 且已配置 URL）展示「采集」按钮，点击后调用该 API 并展示结果（新增文章数或错误信息）。验收：单来源采集接口可用、类型/URL 校验与错误提示正确、前端按钮与结果展示生效；`npm run build` 通过。
+- **下一步**: 可选继续扩展（如定时按来源采集、采集历史等）。
+
 ## Session 9 - 2026-02-13
 - **完成**: F009 来源配置界面
 - **实现**: 前端在文章列表上方新增「来源配置」区块：展示来源列表（名称、类型、URL/配置），支持「添加来源」表单（名称必填，类型下拉 manual/rss/api，URL 或配置可选）、编辑（同表单预填）、删除（二次确认）；与后端 `POST/GET/PATCH/DELETE /sources` 联动，保存后 `refetch` 来源列表，筛选区「来源」下拉同步更新。验收：配置页面与表单可用、增删改与后端联动、持久化后列表生效；`npm run build` 通过。

@@ -1,11 +1,11 @@
 """
-采集任务 API：手动触发一次采集、查询最近一次结果与后台任务状态。
+采集任务 API：手动触发一次采集、查询最近一次结果与后台任务状态；支持按来源 ID 单独采集。
 """
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.services.collector import run_collection
+from app.services.collector import run_collection, run_collection_for_source
 
 router = APIRouter(prefix="/collect", tags=["collect"])
 
@@ -32,6 +32,15 @@ def trigger_collect(db: Session = Depends(get_db)):
     """手动触发一次采集，对全部 rss/api 来源拉取并入库。"""
     result = run_collection(db)
     _set_last_result(result)
+    return result
+
+
+@router.post("/run/{source_id}")
+def trigger_collect_source(source_id: int, db: Session = Depends(get_db)):
+    """对指定来源执行一次采集；仅 rss/api 且已配置 URL 的来源可采集。"""
+    result = run_collection_for_source(db, source_id)
+    if not result.get("ok") and result.get("error") == "来源不存在":
+        raise HTTPException(status_code=404, detail=result["error"])
     return result
 
 
