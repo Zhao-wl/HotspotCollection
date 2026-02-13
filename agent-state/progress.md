@@ -1,5 +1,10 @@
 # 项目进度日志
 
+## Session 8 - 2026-02-13
+- **完成**: F008 文章标题跳转原文
+- **实现**: 前端文章列表中标题改为可点击链接：有 `url` 时渲染为 `<a href={url} target="_blank" rel="noopener noreferrer">`，点击在新标签打开原文；无 url 时仍显示纯文本。`index.css` 增加 `.article-title-link` 及 hover 下划线样式。验收：标题可点击、新标签打开原文；`npm run build` 通过。
+- **下一步**: 实现 F009 来源配置界面
+
 ## Session 7 - 2026-02-13
 - **完成**: F007 文章列表与筛选界面
 - **实现**: 前端 `App.jsx` 增加文章列表展示（标题、标签、来源、日期），使用 `useArticles`/`useSources`/`useTags` 从后端 `GET /articles`、`GET /sources`、`GET /tags` 拉取数据；筛选区提供按来源、标签、日期起止的下拉/日期控件，变更时重新请求文章列表；`index.css` 增加 `--muted`。验收：页面展示列表、筛选控件生效、数据来自后端 API；`npm run build` 通过。

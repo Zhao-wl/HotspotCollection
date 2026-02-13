@@ -173,7 +173,20 @@ export default function App() {
                   borderBottom: '1px solid #eee',
                 }}
               >
-                <div style={{ fontWeight: 500, marginBottom: '0.25rem' }}>{a.title}</div>
+                <div style={{ fontWeight: 500, marginBottom: '0.25rem' }}>
+                  {a.url ? (
+                    <a
+                      href={a.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="article-title-link"
+                    >
+                      {a.title}
+                    </a>
+                  ) : (
+                    a.title
+                  )}
+                </div>
                 <div style={{ fontSize: '0.9rem', color: 'var(--muted)' }}>
                   {a.source_name && <span>来源: {a.source_name}</span>}
                   {a.tags?.length > 0 && (
