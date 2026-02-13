@@ -1,6 +1,9 @@
 * {
   box-sizing: border-box;
 }
+:root {
+  --muted: #666;
+}
 body {
   margin: 0;
   font-family: system-ui, -apple-system, sans-serif;

@@ -1,5 +1,10 @@
 # 项目进度日志
 
+## Session 7 - 2026-02-13
+- **完成**: F007 文章列表与筛选界面
+- **实现**: 前端 `App.jsx` 增加文章列表展示（标题、标签、来源、日期），使用 `useArticles`/`useSources`/`useTags` 从后端 `GET /articles`、`GET /sources`、`GET /tags` 拉取数据；筛选区提供按来源、标签、日期起止的下拉/日期控件，变更时重新请求文章列表；`index.css` 增加 `--muted`。验收：页面展示列表、筛选控件生效、数据来自后端 API；`npm run build` 通过。
+- **下一步**: 实现 F008 文章标题跳转原文
+
 ## Session 6 - 2026-02-13
 - **完成**: F006 文章展示 API（按日期、标签、来源筛选，分页）
 - **实现**: `app/schemas/article.py` 新增 `ArticleListResponse`、`TagInArticle`（含 source_name、tags）；`GET /articles` 支持 `tag_id`、`source_id`、`date_from`、`date_to` 筛选及 `limit`/`offset` 分页，返回标题、标签、来源、原文链接、日期；验收在 `tests/test_articles_api.py` 中新增 `test_articles_list_filter_and_pagination`，全部通过。
