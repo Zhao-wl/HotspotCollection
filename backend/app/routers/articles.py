@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session, joinedload
 
 from app.database import get_db
-from app.models import Article, Source, Tag
+from app.models import Article, Source, Tag, article_tag
 from app.schemas.article import (
     ArticleBatchCreate,
     ArticleCreate,
@@ -119,6 +119,86 @@ def create_articles_batch(payload: ArticleBatchCreate, db: Session = Depends(get
     for a in created:
         db.refresh(a)
     return created
+
+
+@router.delete("/{article_id}", status_code=204)
+def delete_article(article_id: int, db: Session = Depends(get_db)):
+    """删除指定文章（同时移除其与标签的关联）。"""
+    article = db.query(Article).filter(Article.id == article_id).first()
+    if not article:
+        raise HTTPException(status_code=404, detail=f"Article id={article_id} not found")
+    db.delete(article)
+    db.commit()
+    return None
+
+
+@router.post("/clean-duplicates")
+def clean_duplicate_articles(db: Session = Depends(get_db)):
+    """
+    清理重复文章：按原文链接 url 分组，每组只保留一条（保留 id 最小的），其余删除。
+    返回删除的数量及受影响的 url 数量。
+    """
+    from sqlalchemy import func
+
+    # 找出有重复的 url：按 url 分组，count > 1
+    dup_urls = (
+        db.query(Article.url)
+        .group_by(Article.url)
+        .having(func.count(Article.id) > 1)
+        .all()
+    )
+    dup_urls = [r[0] for r in dup_urls]
+    deleted_count = 0
+    for url in dup_urls:
+        articles = (
+            db.query(Article).filter(Article.url == url).order_by(Article.id.asc()).all()
+        )
+        # 保留第一条（id 最小），删除其余
+        for a in articles[1:]:
+            db.delete(a)
+            deleted_count += 1
+    db.commit()
+    return {
+        "deleted_count": deleted_count,
+        "urls_with_duplicates": len(dup_urls),
+    }
+
+
+@router.post("/delete-all")
+def delete_all_articles(db: Session = Depends(get_db)):
+    """删除数据库中全部文章（同时清除文章-标签关联）。返回删除条数。"""
+    count = db.query(Article).count()
+    db.query(Article).delete()
+    db.commit()
+    return {"deleted_count": count}
+
+
+@router.post("/fix-missing-keywords")
+def fix_missing_keywords(db: Session = Depends(get_db)):
+    """
+    批量修复：找出所有已入库但无关键词（无 tags）的文章，逐个进行关键词提取并关联。
+    返回修复数量及错误信息。仅当某篇文章实际补充了至少一个关键词时才计入 fixed_count。
+    """
+    has_tag_sub = db.query(article_tag.c.article_id).distinct()
+    without_keywords = (
+        db.query(Article).filter(~Article.id.in_(has_tag_sub)).all()
+    )
+    fixed_count = 0
+    errors: list[str] = []
+    for article in without_keywords:
+        try:
+            kw_list = extract_and_attach_keywords(db, article)
+            if kw_list:
+                fixed_count += 1
+        except Exception as e:
+            title_preview = (article.title or "")[:30] + ("…" if len(article.title or "") > 30 else "")
+            errors.append(f"文章 id={article.id} ({title_preview}): {e}")
+    db.commit()
+    return {
+        "total_without_keywords": len(without_keywords),
+        "fixed_count": fixed_count,
+        "errors": errors,
+    }
 
 
 @router.post("/{article_id}/extract-keywords", response_model=list[TagResponse])

@@ -4,9 +4,9 @@ uvicorn[standard]>=0.27.0
 sqlalchemy>=2.0.0
 aiosqlite>=0.19.0
 pydantic-settings>=2.0.0
+python-dotenv>=1.0.0
 httpx>=0.26.0
-langextract>=1.1.0
 langextract[openai]>=1.1.0
-# F005: 硅基流动为 OpenAI 兼容 API，通过 base_url 使用
+# F005: SiliconFlow OpenAI-compatible API via base_url
 feedparser>=6.0.0
-# 自动采集：RSS/Atom 解析
+# Auto fetch: RSS/Atom parsing

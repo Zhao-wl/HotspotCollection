@@ -1,5 +1,9 @@
 # 项目进度日志
 
+## Session 13 - 2026-02-13
+- **完成**: F013 提供修复按钮，对没有关键词且入库的文章进行关键词提取
+- **实现**: 在 `features.json` 中新增 F013；后端 `app/routers/articles.py` 新增 `POST /articles/fix-missing-keywords`（置于 `/{article_id}/extract-keywords` 之前），查询无 tags 的文章、逐个调用 `extract_and_attach_keywords` 并返回 `total_without_keywords`/`fixed_count`/`errors`；前端筛选区增加「修复关键词」按钮及结果展示（无需修复提示或已为 N 篇补充关键词）。验收：接口可正确找出并修复无关键词文章；前端按钮与结果展示生效；`npm run build` 通过。
+
 ## Session 12 - 2026-02-13
 - **完成**: F012 采集后使用 LangExtract 对获取到的文章进行关键词提取
 - **实现**: 在 `features.json` 中新增 F012；新增 `app/services/article_keywords.py`（`get_or_create_tag`、`extract_and_attach_keywords`）供文章 API 与采集服务复用；`app/services/collector.py` 中 `_dedupe_and_insert` 改为返回 `(新增数量, 新文章列表)`，单来源采集与全部采集在 commit 后对新文章依次调用 `extract_and_attach_keywords` 并再次 commit；提取失败时仅跳过该条，不影响入库。文章路由改为使用 `extract_and_attach_keywords`。验收：`tests/test_collect_keywords.py` 通过（mock RSS 与关键词提取，验证新文章自动有关键词及无 API Key 时仍正常入库）；`test_keywords_api` / `test_articles_api` 通过。

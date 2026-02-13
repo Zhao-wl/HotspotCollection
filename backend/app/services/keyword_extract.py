@@ -12,6 +12,7 @@ except ImportError:
 
 from app.config import settings
 
+
 def _get_prompt_and_examples():
     """返回 LangExtract 的提示与示例（仅在 lx 可用时使用）。"""
     prompt = textwrap.dedent("""\
@@ -44,15 +45,22 @@ def extract_keywords(text: str) -> List[str]:
         return []
 
     try:
+        # 直接实例化 OpenAI 兼容 model，绕过 resolve_provider，确保走硅基流动 API
+        try:
+            from langextract.providers.openai import OpenAILanguageModel
+        except ImportError:
+            return []  # 需 pip install "langextract[openai]"
         prompt, examples = _get_prompt_and_examples()
-        # 硅基流动为 OpenAI 兼容 API，通过 language_model_params 传入 base_url
+        language_model = OpenAILanguageModel(
+            model_id=settings.siliconflow_model,
+            api_key=settings.siliconflow_api_key,
+            base_url=settings.siliconflow_base_url,
+        )
         result = lx.extract(
             text_or_documents=text.strip(),
             prompt_description=prompt,
             examples=examples,
-            model_id=settings.siliconflow_model,
-            api_key=settings.siliconflow_api_key,
-            language_model_params={"base_url": settings.siliconflow_base_url},
+            model=language_model,
             fence_output=True,
             use_schema_constraints=False,
         )

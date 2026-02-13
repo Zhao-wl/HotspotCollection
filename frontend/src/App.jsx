@@ -92,6 +92,13 @@ export default function App() {
   const [collectResult, setCollectResult] = useState(null)
   const [collectingSourceId, setCollectingSourceId] = useState(null)
   const [sourceCollectResult, setSourceCollectResult] = useState({})
+  const [fixKeywordsRunning, setFixKeywordsRunning] = useState(false)
+  const [fixKeywordsResult, setFixKeywordsResult] = useState(null)
+  const [cleanDupRunning, setCleanDupRunning] = useState(false)
+  const [cleanDupResult, setCleanDupResult] = useState(null)
+  const [deleteAllRunning, setDeleteAllRunning] = useState(false)
+  const [deleteAllResult, setDeleteAllResult] = useState(null)
+  const [articleDeleteError, setArticleDeleteError] = useState(null)
   const { list, loading, error, refetch: refetchArticles } = useArticles({
     ...filters,
     source_id: filters.source_id || undefined,
@@ -197,6 +204,74 @@ export default function App() {
     }
   }
 
+  const runFixMissingKeywords = async () => {
+    setFixKeywordsRunning(true)
+    setFixKeywordsResult(null)
+    try {
+      const r = await fetch(`${API_BASE}/articles/fix-missing-keywords`, { method: 'POST' })
+      const data = await r.ok ? await r.json().catch(() => ({})) : { errors: [r.statusText] }
+      setFixKeywordsResult(data)
+      refetchArticles()
+    } catch (e) {
+      setFixKeywordsResult({ fixed_count: 0, total_without_keywords: 0, errors: [e.message || '请求失败'] })
+    } finally {
+      setFixKeywordsRunning(false)
+    }
+  }
+
+  const runCleanDuplicates = async () => {
+    if (!window.confirm('确定要清理重复文章吗？将按原文链接保留一条、删除其余。')) return
+    setCleanDupRunning(true)
+    setCleanDupResult(null)
+    try {
+      const r = await fetch(`${API_BASE}/articles/clean-duplicates`, { method: 'POST' })
+      const data = await r.ok ? await r.json().catch(() => ({})) : { deleted_count: 0, urls_with_duplicates: 0 }
+      setCleanDupResult(data)
+      refetchArticles()
+    } catch (e) {
+      setCleanDupResult({ deleted_count: 0, urls_with_duplicates: 0, error: e.message || '请求失败' })
+    } finally {
+      setCleanDupRunning(false)
+    }
+  }
+
+  const runDeleteAllArticles = async () => {
+    if (!window.confirm('确定要删除数据库中全部文章？此操作不可恢复。')) return
+    setDeleteAllRunning(true)
+    setDeleteAllResult(null)
+    try {
+      const r = await fetch(`${API_BASE}/articles/delete-all`, { method: 'POST' })
+      const data = await r.ok ? await r.json().catch(() => ({})) : { deleted_count: 0, error: r.statusText }
+      if (!r.ok) data.error = data.error || r.statusText
+      setDeleteAllResult(data)
+      refetchArticles()
+    } catch (e) {
+      setDeleteAllResult({ deleted_count: 0, error: e.message || '请求失败' })
+    } finally {
+      setDeleteAllRunning(false)
+    }
+  }
+
+  const deleteArticle = async (articleId) => {
+    if (!window.confirm('确定从数据库中删除该文章？')) return
+    setArticleDeleteError(null)
+    try {
+      const r = await fetch(`${API_BASE}/articles/${articleId}`, { method: 'DELETE' })
+      if (!r.ok) {
+        const text = await r.text()
+        let msg = text
+        try {
+          const j = JSON.parse(text)
+          if (j.detail) msg = typeof j.detail === 'string' ? j.detail : JSON.stringify(j.detail)
+        } catch (_) {}
+        throw new Error(msg || r.statusText)
+      }
+      refetchArticles()
+    } catch (e) {
+      setArticleDeleteError(e.message || '删除失败')
+    }
+  }
+
   const canCollectSource = (s) => {
     const kind = (s.type_or_kind || '').toLowerCase()
     const hasUrl = (s.url_or_config || '').trim().length > 0
@@ -287,7 +362,57 @@ export default function App() {
           >
             {collectRunning ? '采集中…' : '立即采集'}
           </button>
+          <button
+            type="button"
+            onClick={runFixMissingKeywords}
+            disabled={fixKeywordsRunning}
+            style={{ marginLeft: '0.5rem', padding: '0.4rem 0.75rem' }}
+          >
+            {fixKeywordsRunning ? '修复中…' : '修复关键词'}
+          </button>
+          <button
+            type="button"
+            onClick={runCleanDuplicates}
+            disabled={cleanDupRunning}
+            style={{ marginLeft: '0.5rem', padding: '0.4rem 0.75rem' }}
+          >
+            {cleanDupRunning ? '清理中…' : '清理冗余数据'}
+          </button>
+          <button
+            type="button"
+            onClick={runDeleteAllArticles}
+            disabled={deleteAllRunning}
+            style={{ marginLeft: '0.5rem', padding: '0.4rem 0.75rem', color: 'crimson' }}
+          >
+            {deleteAllRunning ? '删除中…' : '删除所有文章'}
+          </button>
         </div>
+        {deleteAllResult != null && (
+          <p style={{ fontSize: '0.9rem', marginTop: '0.5rem', color: 'var(--muted)' }}>
+            {deleteAllResult.error
+              ? <span style={{ color: 'crimson' }}>{deleteAllResult.error}</span>
+              : `已删除全部 ${deleteAllResult.deleted_count ?? 0} 篇文章。`}
+          </p>
+        )}
+        {cleanDupResult != null && (
+          <p style={{ fontSize: '0.9rem', marginTop: '0.5rem', color: 'var(--muted)' }}>
+            {cleanDupResult.error
+              ? <span style={{ color: 'crimson' }}>{cleanDupResult.error}</span>
+              : cleanDupResult.deleted_count === 0
+                ? '未发现重复文章。'
+                : `已删除 ${cleanDupResult.deleted_count} 条重复文章（涉及 ${cleanDupResult.urls_with_duplicates ?? 0} 个链接）。`}
+          </p>
+        )}
+        {fixKeywordsResult != null && (
+          <p style={{ fontSize: '0.9rem', marginTop: '0.5rem', color: 'var(--muted)' }}>
+            {fixKeywordsResult.total_without_keywords === 0
+              ? '当前无缺少关键词的文章，无需修复。'
+              : `已为 ${fixKeywordsResult.fixed_count ?? 0} 篇补充关键词（共 ${fixKeywordsResult.total_without_keywords} 篇缺少关键词）。`}
+            {fixKeywordsResult.errors?.length > 0 && (
+              <span style={{ color: 'crimson', marginLeft: '0.5rem' }}> 错误: {fixKeywordsResult.errors.join('; ')}</span>
+            )}
+          </p>
+        )}
         {collectResult && (
           <p style={{ fontSize: '0.9rem', marginTop: '0.5rem', color: 'var(--muted)' }}>
             上次采集: 成功 {collectResult.sources_ok ?? 0} 个来源，失败 {collectResult.sources_fail ?? 0} 个，新增文章 {collectResult.articles_added ?? 0} 篇
@@ -423,6 +548,9 @@ export default function App() {
         {!loading && !error && list.length === 0 && (
           <p style={{ color: 'var(--muted)' }}>暂无文章</p>
         )}
+        {articleDeleteError && (
+          <p style={{ color: 'crimson', fontSize: '0.9rem', marginBottom: '0.5rem' }}>{articleDeleteError}</p>
+        )}
         {!loading && !error && list.length > 0 && (
           <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
             {list.map((a) => (
@@ -431,31 +559,45 @@ export default function App() {
                 style={{
                   padding: '0.75rem 0',
                   borderBottom: '1px solid #eee',
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  justifyContent: 'space-between',
+                  gap: '0.75rem',
                 }}
               >
-                <div style={{ fontWeight: 500, marginBottom: '0.25rem' }}>
-                  {a.url ? (
-                    <a
-                      href={a.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="article-title-link"
-                    >
-                      {a.title}
-                    </a>
-                  ) : (
-                    a.title
-                  )}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontWeight: 500, marginBottom: '0.25rem' }}>
+                    {a.url ? (
+                      <a
+                        href={a.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="article-title-link"
+                      >
+                        {a.title}
+                      </a>
+                    ) : (
+                      a.title
+                    )}
+                  </div>
+                  <div style={{ fontSize: '0.9rem', color: 'var(--muted)' }}>
+                    {a.source_name && <span>来源: {a.source_name}</span>}
+                    <span style={{ marginLeft: '0.75rem' }}>
+                      {(a.tags && a.tags.length > 0)
+                        ? (a.tags.slice(0, 3)).map((t) => t.name).join('、')
+                        : '—'}
+                    </span>
+                    <span style={{ marginLeft: '0.75rem' }}>{formatDate(a.published_at)}</span>
+                  </div>
                 </div>
-                <div style={{ fontSize: '0.9rem', color: 'var(--muted)' }}>
-                  {a.source_name && <span>来源: {a.source_name}</span>}
-                  <span style={{ marginLeft: '0.75rem' }}>
-                    {(a.tags && a.tags.length > 0)
-                      ? (a.tags.slice(0, 3)).map((t) => t.name).join('、')
-                      : '—'}
-                  </span>
-                  <span style={{ marginLeft: '0.75rem' }}>{formatDate(a.published_at)}</span>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => deleteArticle(a.id)}
+                  style={{ flexShrink: 0, padding: '0.25rem 0.5rem', fontSize: '0.85rem' }}
+                  title="从数据库中删除该文章"
+                >
+                  删除
+                </button>
               </li>
             ))}
           </ul>
