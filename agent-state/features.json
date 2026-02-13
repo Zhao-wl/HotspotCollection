@@ -1,0 +1,115 @@
+{
+  "project": "HotspotCollection",
+  "description": "全栈热点文章收集 Web 应用：React + FastAPI + SQLite，支持配置来源、关键词提取与聚合、按日期/标签/来源展示",
+  "created_at": "2026-02-13T00:00:00+08:00",
+  "features": [
+    {
+      "id": "F001",
+      "category": "infra",
+      "priority": 1,
+      "description": "项目基础设施搭建：React 前端 + FastAPI 后端 + SQLite，目录结构、依赖清单、一条命令启动前后端开发环境",
+      "acceptance_criteria": [
+        "backend/ 与 frontend/ 目录结构已创建，依赖文件已配置（requirements.txt、package.json）",
+        "后端可通过命令启动并返回健康检查（如 GET /health）",
+        "前端可通过命令启动并能在浏览器打开",
+        "README 或 init 脚本说明如何同时启动前后端"
+      ],
+      "passes": false
+    },
+    {
+      "id": "F002",
+      "category": "backend",
+      "priority": 2,
+      "description": "后端数据模型：文章、来源、标签的 SQLite 模型与迁移/建表",
+      "acceptance_criteria": [
+        "存在文章（标题、原文链接、来源、日期等）与来源配置的数据模型或 schema",
+        "存在标签/关键词与文章的关联模型",
+        "应用启动时能自动创建或迁移 SQLite 表"
+      ],
+      "passes": false
+    },
+    {
+      "id": "F003",
+      "category": "backend",
+      "priority": 3,
+      "description": "来源配置 API：用户可增删改查热点文章来源配置",
+      "acceptance_criteria": [
+        "提供来源的 CRUD API（创建、列表、更新、删除）",
+        "来源至少包含名称、类型或 URL/配置等可区分不同来源的字段",
+        "配置持久化到 SQLite"
+      ],
+      "passes": false
+    },
+    {
+      "id": "F004",
+      "category": "backend",
+      "priority": 4,
+      "description": "文章采集与入库：从配置的来源拉取或录入文章并写入数据库",
+      "acceptance_criteria": [
+        "存在将单条或多条文章写入数据库的接口或脚本",
+        "文章记录包含标题、原文链接、来源、日期等必要字段",
+        "可与来源配置关联（如按来源 ID 录入）"
+      ],
+      "passes": false
+    },
+    {
+      "id": "F005",
+      "category": "backend",
+      "priority": 5,
+      "description": "关键词提取与聚合：使用 LangExtract（google/langextract）提取关键词，使用硅基流动 API（Qwen/Qwen3-8B）作为 LLM，并按关键词聚合文章",
+      "acceptance_criteria": [
+        "集成 langextract 库，可对指定文本或文章进行关键词提取",
+        "LLM 调用使用硅基流动 API（API Key 与模型通过配置或环境变量设置，不硬编码密钥）",
+        "提取的关键词可关联到文章并支持按关键词聚合查询"
+      ],
+      "passes": false
+    },
+    {
+      "id": "F006",
+      "category": "backend",
+      "priority": 6,
+      "description": "文章展示 API：支持按日期、标签、来源筛选，返回文章列表（含标题、标签、来源、原文链接）",
+      "acceptance_criteria": [
+        "提供文章列表 API，支持按日期范围、标签、来源等条件筛选",
+        "返回字段包含标题、标签、来源、原文链接、日期等",
+        "支持分页或限制数量"
+      ],
+      "passes": false
+    },
+    {
+      "id": "F007",
+      "category": "frontend",
+      "priority": 7,
+      "description": "文章列表与筛选界面：展示文章列表，支持按日期、标签、来源分类筛选",
+      "acceptance_criteria": [
+        "页面展示文章列表，每条显示标题、标签、来源",
+        "提供按日期、标签、来源的筛选控件并生效",
+        "列表数据来自后端 API"
+      ],
+      "passes": false
+    },
+    {
+      "id": "F008",
+      "category": "frontend",
+      "priority": 8,
+      "description": "文章标题跳转原文：点击文章标题可跳转到原文链接",
+      "acceptance_criteria": [
+        "列表中文章标题可点击",
+        "点击后打开原文链接（新标签或当前页）"
+      ],
+      "passes": false
+    },
+    {
+      "id": "F009",
+      "category": "frontend",
+      "priority": 9,
+      "description": "来源配置界面：用户可在前端配置热点文章来源",
+      "acceptance_criteria": [
+        "提供来源配置页面或表单",
+        "支持添加、编辑、删除来源，并与后端来源 API 联动",
+        "配置保存后持久化并可在列表中生效"
+      ],
+      "passes": false
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+# 环境与密钥
+.env
+*.local
+
+# Python
+backend/.venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# 数据库（可选：若希望提交空库可去掉）
+backend/*.db
+backend/data/
+
+# Node
+frontend/node_modules/
+frontend/dist/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
