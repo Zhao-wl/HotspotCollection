@@ -20,13 +20,14 @@ from app.main import app
 
 
 def test_sources_crud():
-    """来源 CRUD + 持久化到 SQLite。"""
+    """来源 CRUD + 持久化到 SQLite。不假设初始列表为空（与其它测试共用临时 DB 时仍通过）。"""
     init_db()  # 确保表存在（与 app lifespan 一致）
     with TestClient(app) as client:
-        # 1. 列表为空
+        # 1. 初始列表长度（可能已有其它测试创建的数据）
         r = client.get("/sources")
         assert r.status_code == 200
-        assert r.json() == []
+        initial_list = r.json()
+        initial_len = len(initial_list)
 
         # 2. 创建
         r = client.post(
@@ -45,10 +46,13 @@ def test_sources_crud():
         assert "id" in data and data["id"] >= 1
         sid = data["id"]
 
-        # 3. 列表有一条
+        # 3. 列表多一条且包含新建项
         r = client.get("/sources")
         assert r.status_code == 200
-        assert len(r.json()) == 1
+        after_create = r.json()
+        assert len(after_create) == initial_len + 1
+        created = next((x for x in after_create if x["id"] == sid), None)
+        assert created is not None and created["name"] == "RSS 示例"
 
         # 4. 获取单条
         r = client.get(f"/sources/{sid}")
@@ -64,10 +68,11 @@ def test_sources_crud():
         r = client.delete(f"/sources/{sid}")
         assert r.status_code == 204
 
-        # 7. 列表又为空
+        # 7. 列表恢复为初始长度
         r = client.get("/sources")
         assert r.status_code == 200
-        assert r.json() == []
+        assert len(r.json()) == initial_len
+        assert sid not in {x["id"] for x in r.json()}
 
         # 8. 404
         r = client.get("/sources/999")
