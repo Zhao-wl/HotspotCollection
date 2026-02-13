@@ -1,10 +1,10 @@
 # 项目进度日志
 
 ## Session 2 - 2026-02-13
-- **完成**: F001 项目基础设施验收
-- **方法**: 用 TestClient 验证后端 GET /health 返回 200 与 `status: ok`；用 `npm run build` 验证前端可成功构建；在 `docs/PROJECT_README.md` 中补充「同时启动前后端」说明（开两终端分别启动后端与前端）
-- **验证**: 四条验收标准均满足：目录与依赖已存在、后端 /health 通过、前端构建通过、README/init 已说明如何同时启动
-- **下一步**: 实现 F002 后端数据模型（文章、来源、标签的 SQLite 模型与建表）
+- **完成**: F001 项目基础设施验收；F002 后端数据模型
+- **F001**: 用 TestClient 验证后端 GET /health；`npm run build` 验证前端；在 `docs/PROJECT_README.md` 中补充「同时启动前后端」说明。四条验收标准均满足。
+- **F002**: 新增 `app/database.py`（引擎、Session、init_db）、`app/models.py`（Source、Article、Tag、article_tag 关联表）；在 `main.py` 使用 lifespan 启动时调用 `init_db()` 自动建表。验收：表 sources、articles、tags、article_tag 已创建，应用启动与 /health 正常。
+- **下一步**: 实现 F003 来源配置 API（CRUD）
 
 ## Session 1 - 2026-02-13
 - **完成**: 初始化模式 — 分析需求、生成特性列表、搭建项目脚手架、创建初始化脚本

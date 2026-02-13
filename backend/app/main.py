@@ -2,13 +2,27 @@
 HotspotCollection 后端入口
 FastAPI + SQLite，提供健康检查与后续文章/来源 API。
 """
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
+from app.database import init_db
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """应用生命周期：启动时建表。"""
+    init_db()
+    yield
+    # 关闭时无需特别处理（同步引擎由 SessionLocal 管理）
+
 
 app = FastAPI(
     title="HotspotCollection API",
     description="热点文章收集服务",
     version="0.1.0",
+    lifespan=lifespan,
 )
 
 app.add_middleware(
