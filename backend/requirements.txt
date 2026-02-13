@@ -8,3 +8,5 @@ httpx>=0.26.0
 langextract>=1.1.0
 langextract[openai]>=1.1.0
 # F005: 硅基流动为 OpenAI 兼容 API，通过 base_url 使用
+feedparser>=6.0.0
+# 自动采集：RSS/Atom 解析

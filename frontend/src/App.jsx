@@ -2,10 +2,12 @@ import { useState, useEffect, useCallback } from 'react'
 
 const API_BASE = '/api'
 
-function useArticles(filters) {
+function useArticles(filters, refreshTrigger) {
   const [list, setList] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [trigger, setTrigger] = useState(0)
+  const refetch = useCallback(() => setTrigger((t) => t + 1), [])
   useEffect(() => {
     setLoading(true)
     const params = new URLSearchParams()
@@ -20,8 +22,8 @@ function useArticles(filters) {
       .then(setList)
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false))
-  }, [filters.source_id, filters.tag_id, filters.date_from, filters.date_to, filters.limit, filters.offset])
-  return { list, loading, error }
+  }, [filters.source_id, filters.tag_id, filters.date_from, filters.date_to, filters.limit, filters.offset, trigger, refreshTrigger])
+  return { list, loading, error, refetch }
 }
 
 function useSources() {
@@ -86,7 +88,9 @@ export default function App() {
   const { tags, error: tagsError } = useTags()
   const [sourceForm, setSourceForm] = useState(null) // null = 隐藏, { id, name, type_or_kind, url_or_config } = 编辑, {} = 新建
   const [sourceSubmitError, setSourceSubmitError] = useState(null)
-  const { list, loading, error } = useArticles({
+  const [collectRunning, setCollectRunning] = useState(false)
+  const [collectResult, setCollectResult] = useState(null)
+  const { list, loading, error, refetch: refetchArticles } = useArticles({
     ...filters,
     source_id: filters.source_id || undefined,
     tag_id: filters.tag_id || undefined,
@@ -134,14 +138,30 @@ export default function App() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(body),
         })
-        if (!r.ok) throw new Error(await r.text() || r.statusText)
+        if (!r.ok) {
+          const text = await r.text()
+          let msg = text
+          try {
+            const j = JSON.parse(text)
+            if (j.detail) msg = typeof j.detail === 'string' ? j.detail : JSON.stringify(j.detail)
+          } catch (_) {}
+          throw new Error(msg || r.statusText)
+        }
       } else {
         const r = await fetch(`${API_BASE}/sources`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(body),
         })
-        if (!r.ok) throw new Error(await r.text() || r.statusText)
+        if (!r.ok) {
+          const text = await r.text()
+          let msg = text
+          try {
+            const j = JSON.parse(text)
+            if (j.detail) msg = typeof j.detail === 'string' ? j.detail : JSON.stringify(j.detail)
+          } catch (_) {}
+          throw new Error(msg || r.statusText)
+        }
       }
       refetchSources()
       closeSourceForm()
@@ -157,6 +177,21 @@ export default function App() {
       refetchSources()
     } catch (e) {
       setSourceSubmitError(e.message || '删除失败')
+    }
+  }
+
+  const runCollect = async () => {
+    setCollectRunning(true)
+    setCollectResult(null)
+    try {
+      const r = await fetch(`${API_BASE}/collect/run`, { method: 'POST' })
+      const data = await r.json().catch(() => ({}))
+      setCollectResult(data)
+      refetchArticles()
+    } catch (e) {
+      setCollectResult({ errors: [e.message || '请求失败'] })
+    } finally {
+      setCollectRunning(false)
     }
   }
 
@@ -221,7 +256,23 @@ export default function App() {
               style={{ marginLeft: '0.5rem', padding: '0.35rem 0.5rem' }}
             />
           </label>
+          <button
+            type="button"
+            onClick={runCollect}
+            disabled={collectRunning}
+            style={{ marginLeft: '0.5rem', padding: '0.4rem 0.75rem' }}
+          >
+            {collectRunning ? '采集中…' : '立即采集'}
+          </button>
         </div>
+        {collectResult && (
+          <p style={{ fontSize: '0.9rem', marginTop: '0.5rem', color: 'var(--muted)' }}>
+            上次采集: 成功 {collectResult.sources_ok ?? 0} 个来源，失败 {collectResult.sources_fail ?? 0} 个，新增文章 {collectResult.articles_added ?? 0} 篇
+            {collectResult.errors?.length > 0 && (
+              <span style={{ color: 'crimson', marginLeft: '0.5rem' }}> 错误: {collectResult.errors.join('; ')}</span>
+            )}
+          </p>
+        )}
         {(sourcesError || tagsError) && (
           <p style={{ color: 'crimson', fontSize: '0.9rem', marginTop: '0.5rem' }}>
             {sourcesError || tagsError}

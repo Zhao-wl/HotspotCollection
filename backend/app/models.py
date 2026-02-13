@@ -1,7 +1,7 @@
 """
 HotspotCollection 数据模型：来源、文章、标签及文章-标签关联。
 """
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, Text, Table
 from sqlalchemy.orm import relationship
 
@@ -26,7 +26,7 @@ class Source(Base):
     name = Column(String(255), nullable=False, index=True)
     type_or_kind = Column(String(64), nullable=True)  # 如 rss, api, manual
     url_or_config = Column(Text, nullable=True)  # URL 或 JSON 配置
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     articles = relationship("Article", back_populates="source")
 

@@ -14,15 +14,21 @@ router = APIRouter(prefix="/sources", tags=["sources"])
 @router.post("", response_model=SourceResponse, status_code=201)
 def create_source(payload: SourceCreate, db: Session = Depends(get_db)):
     """创建来源配置。"""
-    source = Source(
-        name=payload.name,
-        type_or_kind=payload.type_or_kind,
-        url_or_config=payload.url_or_config,
-    )
-    db.add(source)
-    db.commit()
-    db.refresh(source)
-    return source
+    try:
+        url_or_config = (payload.url_or_config or "").strip() or None
+        type_or_kind = (payload.type_or_kind or "").strip() or None
+        source = Source(
+            name=payload.name.strip(),
+            type_or_kind=type_or_kind,
+            url_or_config=url_or_config,
+        )
+        db.add(source)
+        db.commit()
+        db.refresh(source)
+        return source
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"创建来源失败: {str(e)}") from e
 
 
 @router.get("", response_model=list[SourceResponse])
