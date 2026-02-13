@@ -1,5 +1,10 @@
 # 项目进度日志
 
+## Session 4 - 2026-02-13
+- **完成**: F004 文章采集与入库
+- **实现**: `app/schemas/article.py`（ArticleCreate/ArticleResponse/ArticleBatchCreate）、`app/routers/articles.py`（GET /articles 列表、POST /articles 单条、POST /articles/batch 批量）、按 source_id 校验来源存在；验收脚本 `tests/test_articles_api.py` 全部通过。
+- **下一步**: 实现 F005 关键词提取与聚合
+
 ## Session 3 - 2026-02-13
 - **完成**: F003 来源配置 API（CRUD）
 - **实现**: `app/schemas/source.py`（SourceCreate/Update/Response）、`app/routers/sources.py`（POST/GET/PATCH/DELETE /sources）、在 main 中挂载路由；验收脚本 `tests/test_sources_api.py`（临时文件 DB + TestClient）全部通过。
