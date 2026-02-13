@@ -122,6 +122,17 @@
         "前端在来源配置列表中，对可采集的来源（rss/api 且已配置 URL）展示「采集」按钮，点击后触发该来源的采集并展示结果（如新增文章数或错误信息）"
       ],
       "passes": true
+    },
+    {
+      "id": "F011",
+      "category": "frontend",
+      "priority": 11,
+      "description": "文章列表显示 LangExtract 提取的关键词：每条文章条目显示 2-3 个关键词",
+      "acceptance_criteria": [
+        "文章列表中每条文章显示其关键词（来自后端 tags，即 LangExtract 提取结果）",
+        "每条文章仅显示 2-3 个关键词，不展示全部"
+      ],
+      "passes": true
     }
   ]
 }

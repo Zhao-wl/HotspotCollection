@@ -449,11 +449,11 @@ export default function App() {
                 </div>
                 <div style={{ fontSize: '0.9rem', color: 'var(--muted)' }}>
                   {a.source_name && <span>来源: {a.source_name}</span>}
-                  {a.tags?.length > 0 && (
-                    <span style={{ marginLeft: '0.75rem' }}>
-                      标签: {a.tags.map((t) => t.name).join(', ')}
-                    </span>
-                  )}
+                  <span style={{ marginLeft: '0.75rem' }}>
+                    {(a.tags && a.tags.length > 0)
+                      ? (a.tags.slice(0, 3)).map((t) => t.name).join('、')
+                      : '—'}
+                  </span>
                   <span style={{ marginLeft: '0.75rem' }}>{formatDate(a.published_at)}</span>
                 </div>
               </li>
