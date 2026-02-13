@@ -1,5 +1,10 @@
 # 项目进度日志
 
+## Session 6 - 2026-02-13
+- **完成**: F006 文章展示 API（按日期、标签、来源筛选，分页）
+- **实现**: `app/schemas/article.py` 新增 `ArticleListResponse`、`TagInArticle`（含 source_name、tags）；`GET /articles` 支持 `tag_id`、`source_id`、`date_from`、`date_to` 筛选及 `limit`/`offset` 分页，返回标题、标签、来源、原文链接、日期；验收在 `tests/test_articles_api.py` 中新增 `test_articles_list_filter_and_pagination`，全部通过。
+- **下一步**: 实现 F007 文章列表与筛选界面（前端）
+
 ## Session 5 - 2026-02-13
 - **完成**: F005 关键词提取与聚合
 - **实现**: 集成 `langextract`，通过 `app/config.py` 读取硅基流动 API（SILICONFLOW_API_KEY/BASE_URL/MODEL）；`app/services/keyword_extract.py` 使用 LangExtract + 硅基流动（OpenAI 兼容 base_url）提取关键词；`POST /articles/{id}/extract-keywords` 对文章提取并关联 Tag；`GET /tags` 列表、`GET /articles?tag_id=` 按关键词聚合查询；验收脚本 `tests/test_keywords_api.py` 通过（mock 提取结果，无 API Key 时返回空列表）。
